@@ -1,12 +1,15 @@
 const Card = require('../models/card');
+const NotFoundError = require('../errors/not-found-err');
+const BadRequestError = require('../errors/bad-request-err');
+const ForbiddenError = require('../errors/forbidden-err');
 
-module.exports.getCards = (req, res) => {
+module.exports.getCards = (req, res, next) => {
   Card.find({})
     .then((cards) => res.send({ data: cards }))
-    .catch(() => res.status(500).send({ message: 'Внутренняя ошибка сервера' }));
+    .catch(next);
 };
 
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
   const owner = req.user._id;
 
@@ -15,40 +18,41 @@ module.exports.createCard = (req, res) => {
       res.send({ data: card });
     })
     .catch((err) => {
+      let error;
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Неверный запрос' });
-        return;
+        error = new BadRequestError('Неверный запрос');
+        return next(error);
       }
-      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
+      return next(err);
     });
 };
 
-module.exports.deleteCard = (req, res) => {
+module.exports.deleteCard = (req, res, next) => {
   const { cardId } = req.params;
   Card.findById(cardId)
     .orFail()
     .then((card) => {
       if (!card.owner.equals(req.user._id)) {
-        res.status(403).send({ message: 'Запрещено' });
-        return;
+        throw new ForbiddenError('Запрещено, удалить можно только свою карточку');
       }
       Card.deleteOne(card).then(() => res.send({ data: card }));
     })
     .catch((err) => {
-      console.log(err.message);
+      let error;
       if (err.name === 'DocumentNotFoundError') {
-        res.status(404).send({ message: 'Карточка с таким id не существует' });
-        return;
+        error = new NotFoundError('Карточка с таким id не существует');
+        return next(error);
       }
 
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Некорректный формат ID' });
-        return;
-      } res.status(500).send({ message: 'Внутренняя ошибка сервера' });
+        error = new BadRequestError('Некорректный формат ID');
+        return next(error);
+      }
+      return next(err);
     });
 };
 
-module.exports.likeCard = (req, res) => {
+module.exports.likeCard = (req, res, next) => {
   const { cardId } = req.params;
 
   Card.findByIdAndUpdate(
@@ -62,19 +66,21 @@ module.exports.likeCard = (req, res) => {
       res.send({ data: card });
     })
     .catch((err) => {
+      let error;
       if (err.name === 'DocumentNotFoundError') {
-        res.status(404).send({ message: 'Карточка с таким id не существует' });
-        return;
+        error = new NotFoundError('Карточка с таким id не существует');
+        return next(error);
       }
 
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Некорректный формат ID' });
-        return;
-      } res.status(500).send({ message: 'Внутренняя ошибка сервера' });
+        error = new BadRequestError('Некорректный формат ID');
+        return next(error);
+      }
+      return next(err);
     });
 };
 
-module.exports.dislikeCard = (req, res) => {
+module.exports.dislikeCard = (req, res, next) => {
   const { cardId } = req.params;
 
   Card.findByIdAndUpdate(
@@ -87,14 +93,16 @@ module.exports.dislikeCard = (req, res) => {
       res.send({ data: card });
     })
     .catch((err) => {
+      let error;
       if (err.name === 'DocumentNotFoundError') {
-        res.status(404).send({ message: 'Карточка с таким id не существует' });
-        return;
+        error = new NotFoundError('Карточка с таким id не существует');
+        return next(error);
       }
 
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Некорректный формат ID' });
-        return;
-      } res.status(500).send({ message: 'Внутренняя ошибка сервера' });
+        error = new BadRequestError('Некорректный формат ID');
+        return next(error);
+      }
+      return next(err);
     });
 };
