@@ -1,7 +1,7 @@
 {
-  "name": "project_work_14",
-  "version": "0.0.3",
-  "description": "14 project work in Yandex Workshop",
+  "name": "project_work_15",
+  "version": "0.0.1",
+  "description": "15 project work in Yandex Workshop",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
